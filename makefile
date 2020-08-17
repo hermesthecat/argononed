@@ -44,7 +44,7 @@ endif
 ifeq ($(INITSYS), OPENRC)
 	SERVICE_FILE=argononed.gentoo.service
 	SERVICE_FILE_PERMISSIONS=744
-	SERVICE_PATH=/etc/initd/argononed
+	SERVICE_PATH=/etc/init.d/argononed
 	SHUTDOWN_FILE=argononed.stop
 	SHUTDOWN_PATH=/etc/local.d/argononed.stop
 	SERVICE_ENABLE=rc-update add
