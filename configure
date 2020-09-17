@@ -52,6 +52,7 @@ case $DISTRO in
 "libreelec")
     echo "OK"
     BOOTLOC="/flash"
+    ;;
 *)
     echo "WARNING: UNKNOWN DISTRO, The installer may not work";;
 esac
