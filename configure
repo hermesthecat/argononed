@@ -30,23 +30,19 @@ INITSYS="SYSTEMD"
 BOOTLOC="/boot"
 echo -ne "Distro check [$DISTRO]\t"
 case $DISTRO in
-"raspbian")
+"raspbian" | "debian")
     echo "OK"
-    #INITSYS="SYSTEMD"
-    #BOOTLOC="/boot"
     ;;
 "gentoo")
     echo "OK"
     INITSYS="OPENRC"
-    #BOOTLOC="/boot"
     ;;
 "manjaro-arm")
     echo "OK"
     I2CHELPER=1
     ;;
 "ubuntu")
-    echo "WARN - UNTESTED"
-    #INITSYS="SYSTEMD"
+    echo "WARNING:  UNTESTED OS, The installer should work"
     BOOTLOC="/boot/firmware"
     ;;
 "libreelec")
@@ -54,7 +50,8 @@ case $DISTRO in
     BOOTLOC="/flash"
     ;;
 *)
-    echo "WARNING: UNKNOWN DISTRO, The installer may not work";;
+    echo "WARNING: UNKNOWN DISTRO, The installer may not work"
+    ;;
 esac
 
 
