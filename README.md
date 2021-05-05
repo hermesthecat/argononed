@@ -1,6 +1,7 @@
 # Argon One Daemon
 
-A replacement daemon for the Argon One Raspberry Pi cases, and the Argon Artik Fan Hat.
+**EXPERIMENTAL BUILD TO RUN A PWM FAN AND NOT USE THE ARGON CONTROLLED FAN!**  
+Do not use this branch for an Argon One case or Artik Hat.
 
 ## How To Install
 
@@ -16,26 +17,13 @@ Configuration is all done in the **/boot/config.txt** look for this line ```dtov
 
 The default values are the same as the OEM at 55℃ the fan will start at 10%, at 60℃ the speed will increase to 55% and finally after 65℃ the fan will spin at 100%.  The default hysteresis is 3℃
 
-## Why make this?
-
-Simply put I didn't like the OEM software.  It works sure but it uses Python and needs to install a bunch of dependencies.  This makes it's foot print on your system much bigger than it needs to be.  My daemon runs with minimal requirements, all of them are included in this Repo.
-
 ## OS Support
 
-The installer now requires you to run ```./configure``` before you run make. This will set up the installer so that it should be able to install on multiple OS's.  The current list of supported OS's are  
+The installer now requires you to run ```./configure``` before you run make. This will set up the installer so that it should be able to install on multiple OS's.  There current is no official supported this is an experimental build
 
-* Raspberry Pi OS 32bit or 64bit
-* RetroPi
-* Gentoo
-* Manjaro-arm
-* Arch Linux arm (ARMv7 installation ONLY)
-* Ubuntu
-* Lakka *\**
-* LibreElec *\**
+Please NOTE that since this uses PWM and not an argon fan controller that you must enable PWM manually.
 
-If your OS isn't on this list it means that the installer isn't setup for your OS and it *may* or *may not* be able to install on your system.
-
-*\** *Support for this OS is with the self extracting package system. SEE BELOW*
+Add ` dtoverlay=pwm,pin=18,func=2 ` to your config.txt
 
 ## Logging Options
 
@@ -93,43 +81,3 @@ argonone-cli --commit
 ```
 
 The changes don't have to made in one shot but you **MUST** commit them for them to take effect.
-
-## Package System
-
-This isn't a traditional package system for mainstream OS support this is meant to make an installer for an OS that otherwise isn't able to build the project locally.
-
-To generate a package you need to follow this procedure.
-
-```text
-make mrproper
-TARGET_DISTRO=<NAME OF DISTRO> ./package.sh
-```
-
-If successful the package will be in the build directory.
-
-### Screenshot of the packager
-
-```text
-    ___                                                __
-   /   |  _________ _____  ____  ____  ____  ___  ____/ /
-  / /| | / ___/ __ `/ __ \/ __ \/ __ \/ __ \/ _ \/ __  / 
- / ___ |/ /  / /_/ / /_/ / / / / /_/ / / / /  __/ /_/ /  
-/_/  |_/_/   \__, /\____/_/ /_/\____/_/ /_/\___/\__,_/   
-            /____/                                       
-                                                PACKAGER 
-_________________________________________________________
-ARGON ONE DAEMON CONFIGURING ...
-Distro check [libreelec] : OK
-SYSTEM CHECK
-gcc : OK
-dtc : OK
-make : OK
-Dependency Check : Successful
-INFO:  Preparing build environment ... OK
-INFO:  Building Source Files ... OK
-INFO:  Checking files ... OK
-INFO:  Building Installer ... OK
-INFO:  Packing files ... OK
-INFO:  Verify package ... OK
-INFO:  Package build/libreelec.pkg.sh is complete 
-```

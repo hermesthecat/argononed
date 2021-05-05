@@ -257,7 +257,7 @@ int reload_config_from_shm()
     log_message(LOG_INFO,"Target Temperature %d ", threshold[3]);   
     return 0;
 }
-
+#if 0
 /**
  * Set command to the argon one micro controller
  * 
@@ -299,6 +299,97 @@ void Set_FanSpeed(uint8_t fan_speed)
         log_message(LOG_INFO,"I2C Closed");
     }
 }
+#else
+/**
+ * Set command to the Fan's PWM 
+ * 
+ * \param fan_speed 0-100 to set fanspeed or 0xFF to close PWM interface
+ */
+void Set_FanSpeed(uint8_t fan_speed)
+{
+    static int file_pwm = 0;
+    static uint8_t speed = 1;
+	if (file_pwm == 0)
+    {
+        // write 0 to /sys/class/pwm/pwmchip0/export
+        // 40000 nS period
+        // write 40000 to /sys/class/pwm/pwmchip0/pwm0/period
+        // To set the speed 0 to 100 %
+        // write 40000 * (float)(fan_speed / 100) to /sys/class/pwm/pwmchip0/pwm0/duty_cycle
+        // if speed = 0 write 0 to /sys/class/pwm/pwmchip0/pwm0/enable else write 1
+        // SETUP PWM 
+        char *filename = (char*)"/sys/class/pwm/pwmchip0/pwm0/duty_cycle";
+        int file_temp = 0;
+        if ((file_temp = open("/sys/class/pwm/pwmchip0/export", O_WRONLY)) < 0)
+        {
+            log_message(LOG_CRITICAL,"Failed to open the PWM Controller");
+            return;
+        }
+        if (write(file_temp,"0",1) < 0)
+        {
+            log_message(LOG_CRITICAL,"Failed to enable the PWM Controller");
+            return;
+        }
+        close (file_temp);
+        if ((file_temp = open("/sys/class/pwm/pwmchip0/pwm0/period", O_WRONLY)) < 0)
+        {
+            log_message(LOG_CRITICAL,"Failed to open the PWM frequency setting");
+            return;
+        }
+        if (write(file_temp,"40000",5) < 0)
+        {
+            log_message(LOG_CRITICAL,"Failed to set the PWM frequency");
+            return;
+        }
+        close (file_temp);
+        if ((file_temp = open("/sys/class/pwm/pwmchip0/pwm0/enable", O_WRONLY)) < 0)
+        {
+            log_message(LOG_CRITICAL,"Failed to open the PWM enable");
+            return;
+        }
+        if (write(file_temp,"1",1) < 0)  // Enable pwm0
+        {
+            log_message(LOG_CRITICAL,"Failed to enable the PWM");
+            return;
+        }
+        close (file_temp);
+        if ((file_pwm = open(filename, O_WRONLY)) < 0)
+        {
+            log_message(LOG_CRITICAL,"Failed to acquire access to duty cycle settings.");
+            return;
+        }
+        log_message(LOG_INFO,"PWM Initialized");
+    }
+    if (fan_speed <= 100 && fan_speed != speed)
+    {
+        char fan_duty_cycle[6];
+        sprintf(fan_duty_cycle,"%05d", (int)(40000 * (float)(fan_speed / 100)));
+        if (write(file_pwm, fan_duty_cycle, 5) != 5)
+        {
+            log_message(LOG_CRITICAL,"Failed to write to the PWM.\n");
+        }
+        log_message(LOG_INFO, "Set fan to %d%%",fan_speed);
+        speed = fan_speed;
+        ptr->fanspeed = fan_speed;
+    } else if (fan_speed == 0xFF)
+    {
+        close(file_pwm);
+        int file_temp = 0;
+        if ((file_temp = open("/sys/class/pwm/pwmchip0/unexport", O_WRONLY)) < 0)
+        {
+            log_message(LOG_CRITICAL,"Failed to open the PWM Controller");
+            return;
+        }
+        if (write(file_temp,"0",1) < 0)
+        {
+            log_message(LOG_CRITICAL,"Failed to disable the PWM Controller");
+            return;
+        }
+        close (file_temp);
+        log_message(LOG_INFO,"PWM Closed");
+    }
+}
+#endif
 /**
  * Reset Shared Memory
  * 
@@ -683,13 +774,14 @@ int main(int argc,char **argv)
     log_message(LOG_INFO,"Startup ArgonOne Daemon ver %s", VERSION);
     log_message(LOG_INFO,"Loading Configuration");
     Read_config();
+#if 0 // GPIO Not required
     if (gpioInitialize() < 0)
     {
         log_message(LOG_FATAL,"GPIO initialization failed");
         return 1;
     }
     log_message(LOG_INFO,"GPIO initialized");
-
+#endif
     struct identapi_struct Pirev;
     Pirev.RAW = IDENTAPI_GET_Revision();
     if (Pirev.RAW == 1)
@@ -721,12 +813,15 @@ int main(int argc,char **argv)
     memcpy(ptr->config.fanstages, &fanstage, sizeof(fanstage));
     memcpy(ptr->config.thresholds, &threshold, sizeof(threshold));
     ptr->config.hysteresis = hysteresis;
+#if 0 // Do not use GPIO 4 
     gpioSetMode(4, PI_INPUT);
     gpioSetPullUpDown(4, PI_PUD_DOWN);
     log_message(LOG_INFO,"Now waiting for button press");
     uint32_t count = 0;
+#endif
     do
     {
+#if 0   // Disable Power Button as it's not needed
         if (monitor_device(&count) == 0)
         {
             log_message(LOG_DEBUG, "Pulse received %dms", count);
@@ -734,9 +829,11 @@ int main(int argc,char **argv)
             // else log_message(LOG_ERROR, "Unrecognized pulse width received [%dms]", count); This ERROR only floods the logs and isn't helpful
         }
         // monitor_device has produced and error
-        usleep(10000);  // Shouldn't be reached but prevent overloading CPU
+#endif
+        sleep(1);  // Shouldn't be reached but prevent overloading CPU
     } while (1);
     cleanup();
+#if 0
     if (count >= 19 && count <= 21)
     {
         log_message(LOG_DEBUG, "EXEC REBOOT");
@@ -749,6 +846,7 @@ int main(int argc,char **argv)
         sync();
         system("/sbin/poweroff");
     }
+#endif
     log_message(LOG_INFO,"Daemon Exiting");
     return 0;
 }
